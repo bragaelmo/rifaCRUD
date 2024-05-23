@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIFA Lista</title>
+  <!-- Inclua os arquivos JavaScript necessários -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://rawgit.com/RobinHerbots/Inputmask/5.x/dist/jquery.inputmask.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js"
+    integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1"
+    crossorigin="anonymous"></script>
+	 <!-- Adiciona o link para o Bootstrap CSS via CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Outras tags head se necessário -->
+</head>
+<body>
+<style>
+  body {
+    font-size: 14px; /* Substitua pela fonte desejada */
+    background-color: #f1dfdd; /* Substitua pela cor desejada */
+  }
+.card-body {
+  padding: 1px; /* Espaçamento interno dentro do card */
+
+}
+  
+</style>
+<img src="rifa.png" alt="Rifa" class="img-fluid">
+<img id="premios" src="premios.png" alt="Premios" class="img-fluid">
+<img src="valor.png" alt="Valor" class="img-fluid">
+	
+<!-- Adicione um contêiner onde os registros em formato de cartão serão exibidos -->
+<div id="recordsContainer"></div>
+
+<!-- Outras partes da sua página, se necessário -->
+<!-- Exemplo de números com nome não nulo -->
+
+  <h3>Preenchidos: <span id="pren"></span></p>
+  <h3>Disponível: <span id="disponivel"></span></p>
+<script>
+
+// Função para obter uma cor aleatória de uma lista predefinida
+function getRandomColorFromList() {
+  const colorList = ['#ff0000', '#00ff00', '#0000ff']; // Adicione as cores desejadas à lista
+  const randomIndex = Math.floor(Math.random() * colorList.length);
+  return colorList[randomIndex];
+}
+
+// Função para renderizar um cartão de RIFA com cor aleatória da lista se o nome for diferente de "null"
+function renderRifaCard(id, nome, telefone) {
+  const cardElement = document.createElement('div');
+  cardElement.classList.add('col-md-1', 'mb-4', 'card');
+  const backgroundColor = nome && nome.trim().toLowerCase() !== 'null' ? getRandomColorFromList() : '';
+  
+  if (backgroundColor) {
+    cardElement.style.backgroundColor = '#ebbfa6';
+  }
+  
+  nome = nome && nome.trim().toLowerCase() !== 'null' ? nome : 'DISPONÍVEL';
+  telefone = telefone && telefone.trim().toLowerCase() !== 'null' ? telefone : '';
+  cardElement.innerHTML = `
+    <div class="card-body text-center">
+      <h5 class="card-title">${id}</h5>
+    </div>
+  `;
+
+  return cardElement.outerHTML;
+}
+
+
+
+
+// Função para carregar registros da tabela
+function loadRecords() {
+  fetch('/listar-registros')
+    .then(response => response.json())
+    .then(records => {
+      const recordsContainer = document.getElementById('recordsContainer');
+      recordsContainer.innerHTML = ''; // Limpa o conteúdo anterior
+
+      let html = ''; // Variável para armazenar o HTML gerado
+
+      records.forEach((record, index) => {
+        // Adiciona a classe 'row' a cada 10 colunas
+        if (index % 10 === 0) {
+          html += '<div class="row">';
+        }
+
+        const cardHtml = renderRifaCard(record.num, record.nome, record.telefone);
+
+        html += cardHtml;
+
+        // Fecha a div com a classe 'row' a cada 10 colunas
+        if ((index + 1) % 10 === 0 || (index + 1) === records.length) {
+          html += '</div>';
+        }
+      });
+
+      // Atualiza o conteúdo do contêiner com o HTML gerado
+      recordsContainer.innerHTML = html;
+    });
+}
+  
+   loadRecords();
+ 
+// Função para buscar dados do servidor
+function fetchNumerosPreenchidos() {
+  fetch('/numeros-preenchidos')
+	.then(response => response.json())
+	.then(data => {
+	  // Manipule os dados recebidos aqui
+	  const pren = document.getElementById('pren');
+	  const disponivel = document.getElementById('disponivel');
+	  console.log(data);
+	  disponivel.textContent = data.isNull[0].total;
+	  pren.textContent = data.notNull[0].total;
+	})
+	.catch(error => console.error('Erro ao buscar dados:', error));
+}
+
+// Chame a função ao carregar a página ou quando necessário
+fetchNumerosPreenchidos();
+</script>
+
+</body>
+</html>

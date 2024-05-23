@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIFA CRUD</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://rawgit.com/RobinHerbots/Inputmask/5.x/dist/jquery.inputmask.js"></script>
+
+
+</head>
+<body>
+
+<h1>RIFA CRUD</h1>
+<!-- Formulário de criação ou atualização -->
+<form id="recordForm">
+	<div>
+  <label for="num">Número:</label>
+  <input type="number" id="num" name="num" required>
+	</div>
+	<div>
+  <label for="nome">Nome:</label>
+  <input type="text" id="nome" name="nome" required>
+</div>
+<div>
+  <label for="telefone">Telefone:</label>
+  <input type="text" id="telefone" name="telefone" required>
+</div>
+  <button type="button" onclick="createOrUpdateRecord()">Criar/Atualizar Registro</button>
+  <button type="button" onclick="generateRandomNumber()">Gerar Número Aleatório</button>
+  <button type="button" onclick="routeLista()">Ver Todos Numeros</button>
+</form>
+
+<!-- Tabela para listar registros -->
+<table border="1">
+  <thead>
+    <tr>
+      <th>Número</th>
+      <th>Nome</th>
+      <th>Telefone</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody id="recordTableBody"></tbody>
+</table>
+
+
+<script>
+  let selectedRecordId = null;
+
+  // Função para carregar registros da tabela
+  function loadRecords() {
+    fetch('/listar-registros')
+      .then(response => response.json())
+      .then(records => {
+        const tableBody = document.getElementById('recordTableBody');
+        tableBody.innerHTML = '';
+
+        records.forEach(record => {
+          const row = tableBody.insertRow();
+          row.insertCell(0).textContent = record.num;
+          row.insertCell(1).textContent = record.nome;
+          row.insertCell(2).textContent = record.telefone;
+
+          const actionsCell = row.insertCell(3);
+          const editButton = document.createElement('button');
+          editButton.textContent = 'Editar';
+          editButton.onclick = () => editRecord(record.id);
+          actionsCell.appendChild(editButton);
+
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'Excluir';
+          deleteButton.onclick = () => deleteRecord(record.id);
+          actionsCell.appendChild(deleteButton);
+        });
+      });
+  }
+
+  // Função para preencher o formulário de criação com dados do registro selecionado
+  function editRecord(id) {
+    selectedRecordId = id;
+
+    fetch(`/listar-registros/${id}`)
+      .then(response => response.json())
+      .then(record => {
+        document.getElementById('num').value = record.num;
+        document.getElementById('nome').value = record.nome;
+        document.getElementById('telefone').value = record.telefone;
+		window.scrollTo(0, 0);
+      });
+  }
+
+  // Função para criar ou atualizar um registro
+  function createOrUpdateRecord() {
+    const num = document.getElementById('num').value;
+    const nome = document.getElementById('nome').value;
+    const telefone = document.getElementById('telefone').value;
+
+    if (selectedRecordId) {
+      // Atualiza o registro existente se selectedRecordId estiver definido
+      fetch(`/atualizar-registro/${selectedRecordId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ num, nome, telefone }),
+      })
+      .then(() => {
+        // Limpa o formulário após a atualização
+        clearForm();
+        // Recarrega a tabela após a atualização do registro
+        loadRecords();
+      });
+    } else {
+      // Cria um novo registro se selectedRecordId não estiver definido
+      fetch('/criar-registro', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ num, nome, telefone }),
+      })
+      .then(() => {
+        // Limpa o formulário após a criação
+        clearForm();
+        // Recarrega a tabela após a criação do registro
+        loadRecords();
+      });
+    }
+  }
+
+  // Função para limpar o formulário
+  function clearForm() {
+    selectedRecordId = null;
+    document.getElementById('num').value = '';
+    document.getElementById('nome').value = '';
+    document.getElementById('telefone').value = '';
+  }
+
+  // Função para excluir um registro
+  function deleteRecord(id) {
+    fetch(`/excluir-registro/${id}`, {
+      method: 'DELETE',
+    })
+    .then(() => {
+      // Recarrega a tabela após a exclusão do registro
+      loadRecords();
+    });
+  }
+  
+    function generateRandomNumber() {
+    fetch('/gerar-numero-aleatorio')
+      .then(response => response.json())
+      .then(randomNumber => {
+        alert(`Número Aleatório Gerado: ${randomNumber}`);
+      });
+  }
+
+ document.addEventListener("DOMContentLoaded", function () {
+    // Inicializa a máscara no campo de telefone
+    $('#telefone').inputmask('(99) 99999-9999');
+  });
+  // Carrega os registros ao carregar a página
+  loadRecords();
+  
+
+  function routeLista() {
+      // Redireciona para a rota /lista
+      window.location.href = '/lista';
+    }
+</script>
+
+</body>
+</html>
